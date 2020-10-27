@@ -1,9 +1,9 @@
 .. image:: https://raw.githubusercontent.com/saketkc/pysradb/master/docs/_static/pysradb_v3.png
     :target: https://raw.githubusercontent.com/saketkc/pysradb/master/docs/_static/pysradb_v3.png
 
-#####################################################################################
-pysradb: Python package for interacting with SRAdb and downloading datasets from SRA.
-#####################################################################################
+######################################################################################
+pysradb: Python package for retrieving metadata and downloading datasets from SRA/ENA
+######################################################################################
 
 
 
@@ -23,17 +23,7 @@ pysradb: Python package for interacting with SRAdb and downloading datasets from
     :target: https://travis-ci.com/saketkc/pysradb
 
 
-.. image:: https://asciinema.org/a/0C3SjYmPTkkemldprUpdVhiKx.svg
-    :target: https://asciinema.org/a/0C3SjYmPTkkemldprUpdVhiKx?speed=5&autoplay=1
 
-***********
-Publication
-***********
-
- `pysradb: A Python package to query next-generation sequencing metadata and data from NCBI Sequence Read Archive <https://f1000research.com/articles/8-532/v1>`_
-
-
- Presentation slides from BOSC (ISMB-ECCB) 2019: https://f1000research.com/slides/8-1183
 
 *********
 CLI Usage
@@ -49,11 +39,11 @@ a list of instructions for each sub-command.
 
    $ pysradb
     usage: pysradb [-h] [--version] [--citation]
-                   {metadb,metadata,download,search,gse-to-gsm,gse-to-srp,gsm-to-gse,gsm-to-srp,gsm-to-srr,gsm-to-srs,gsm-to-srx,srp-to-gse,srp-to-srr,srp-to-srs,srp-to-srx,srr-to-gsm,srr-to-srp,srr-to-srs,srr-to-srx,srs-to-gsm,srs-to-srx,srx-to-srp,srx-to-srr,srx-to-srs}
+                   {metadata,download,search,gse-to-gsm,gse-to-srp,gsm-to-gse,gsm-to-srp,gsm-to-srr,gsm-to-srs,gsm-to-srx,srp-to-gse,srp-to-srr,srp-to-srs,srp-to-srx,srr-to-gsm,srr-to-srp,srr-to-srs,srr-to-srx,srs-to-gsm,srs-to-srx,srx-to-srp,srx-to-srr,srx-to-srs}
                    ...
 
     pysradb: Query NGS metadata and data from NCBI Sequence Read Archive.
-    version: 0.9.0.
+    version: 0.11.0.
     Citation: 10.12688/f1000research.18676.1
 
     optional arguments:
@@ -62,8 +52,7 @@ a list of instructions for each sub-command.
       --citation            how to cite
 
     subcommands:
-      {metadb,metadata,download,search,gse-to-gsm,gse-to-srp,gsm-to-gse,gsm-to-srp,gsm-to-srr,gsm-to-srs,gsm-to-srx,srp-to-gse,srp-to-srr,srp-to-srs,srp-to-srx,srr-to-gsm,srr-to-srp,srr-to-srs,srr-to-srx,srs-to-gsm,srs-to-srx,srx-to-srp,srx-to-srr,srx-to-srs}
-        metadb              Download SRAmetadb.sqlite
+      {metadata,download,search,gse-to-gsm,gse-to-srp,gsm-to-gse,gsm-to-srp,gsm-to-srr,gsm-to-srs,gsm-to-srx,srp-to-gse,srp-to-srr,srp-to-srs,srp-to-srx,srr-to-gsm,srr-to-srp,srr-to-srs,srr-to-srx,srs-to-gsm,srs-to-srx,srx-to-srp,srx-to-srr,srx-to-srs}       
         metadata            Fetch metadata for SRA project (SRPnnnn)
         download            Download SRA project (SRPnnnn)
         search              Search SRA for matching text
@@ -93,8 +82,21 @@ a list of instructions for each sub-command.
 Quickstart
 **********
 
-A Google Colaboratory version of most used commands are available in this `Colab Notebook <https://colab.research.google.com/drive/1C60V-jkcNZiaCra_V5iEyFs318jgVoUR>`_ . Note that this does not require you to download the heavy SQLite file and uses the `SRAWeb` mode (explained below).
-A list of notebooks demonstrating the command line and API use cases are available in the `notebooks directory <https://github.com/saketkc/pysradb/tree/master/notebooks>`_.
+A Google Colaboratory version of most used commands are available in this `Colab Notebook <https://colab.research.google.com/drive/1C60V-jkcNZiaCra_V5iEyFs318jgVoUR>`_ . Note that this requires only an active internet connection (no additional downloads are made).
+
+The following notebooks document all the possible features of `pysradb`:
+
+1. `Python API <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/01.Python-API_demo.ipynb>`_
+2. `Downloading datasets from SRA - command line <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/02.Commandline_download.ipynb>`_
+3. `Parallely download multiple datasets - Python API <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/03.ParallelDownload.ipynb>`_
+4. `Converting SRA-to-fastq - command line (requires conda) <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/04.SRA_to_fastq_conda.ipynb>`_
+5. `Downloading subsets of a project - Python API <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/05.Downloading_subsets_of_a_project.ipynb>`_
+6. `Download BAMs <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/06.Download_BAMs.ipynb>`_
+7. `Metadata for multiple SRPs <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/07.Multiple_SRPs.ipynb>`_
+8. `Multithreaded fastq downloads using Aspera Client <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/08.pysradb_ascp_multithreaded.ipynb>`_
+
+
+
 
 ************
 Installation
@@ -126,9 +128,9 @@ Dependecies
 
 .. code-block:: bash
 
-   pandas==1.0.1
-   requests==2.23.0
-   tqdm==4.43.0
+   pandas==1.1.2
+   requests==2.24.0
+   tqdm==4.49.0
    xmltodict==0.12.0
 
 
@@ -148,16 +150,6 @@ Installing pysradb in development mode
 Using pysradb
 *************
 
-Please see `usage_scenarios <https://saket-choudhary.me/pysradb/usage_scenarios.html>`_ for a few usage scenarios.
-Here are few hand-picked examples.
-
-
-Mode: SRAmetadb or SRAWeb
-=========================
-
-``pysradb``'s initial versions were completely dependent on the ``SRAmnetadb.sqlite`` file made available by the ``SRAdb`` project, we refer to this as the ``SRAmetadb`` mode. However, with ```pysradb 0.9.5``, the depedence on the SQLite file has been made optional. In the abseence of the SQLite file, the operations are performed usiNCBi's ``esrarch`` and ``esummary`` interface, a mode which we refer to as the ``SRAweb`` mode.  All the operations
-with the exception of ``search`` can be performed withoudownloading the SQLite file.
-NOTE: The additional flags such as ``--desc``, ``-detailed`` and ``-expand`` are currently not fully supported in the ``SRAweb`` mode and will be supported in a future release. However, all the basic funcuionality of interconverting one ID to another is available in both ``SRAweb`` and ``SRAmetadb`` mode.
 
 
 Getting SRA metadata
@@ -255,14 +247,15 @@ Converting GSM to SRR
 
 
 
-Downloading entire project
-==========================
+Downloading entire project (multithreaded)
+==========================================
 
-``pysradb`` makes it super easy to download datasets from SRA.
+``pysradb`` makes it super easy to download datasets from SRA parallely:
+Using 8 threads to download:
 
 ::
 
-    $ pysradb download --out-dir ./pysradb_downloads -p SRP063852
+    $ pysradb download -y -t 8 --out-dir ./pysradb_downloads -p SRP063852
 
 Downloads are organized by ``SRP/SRX/SRR`` mimicking the hiererachy of SRA projects.
 
@@ -277,67 +270,32 @@ Downloading only certain samples of interest
 This will download all ``RNA-seq`` samples coming from this project.
 
 
-Downloading SRAmetadb (optional)
-=================================
+Ultrafast fastq downloads
+=========================
 
-``pysradb`` can utilize a SQLite database file that has preprocessed metadata made available by the
-`SRAdb <https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-14-19>`_ project.
-Though, with the release ``0.9.5``, this database file is not a hard requirement for any of the operations.
+With `aspera-client <https://downloads.asperasoft.com/en/downloads/8?list>`_ installed, `pysradb` can perform ultra fast downloads:
 
-
-SRAmetadb can be downloaded using:
-
-.. code-block:: bash
-
-   wget -c https://starbuck1.s3.amazonaws.com/sradb/SRAmetadb.sqlite.gz && gunzip SRAmetadb.sqlite.gz
-
-Alternatively, you can also download it using ``pysradb``, which by default downloads it into your
-current working directory:
-
+To download all original fastqs with `aspera-client` installed utilizing 8 threads:
 
 ::
 
-    $ pysradb metadb
+    $ pysradb download -t 8 --use_ascp -p SRP002605
 
-You can also specify an alternate directory for download by supplying the ``--out-dir <OUT_DIR>`` argument.
-
-
-Search [Requires SRAmetadb]
-===========================
-
-Search for all projects containing "ribosome profiling":
-
-::
-
-   $  pysradb search "ribosome profiling" --db SRAmetadb.sqlite | head
-
-    study_accession experiment_accession sample_accession run_accession
-    DRP000927       DRX002899            DRS002983        DRR003575
-    DRP000927       DRX002900            DRS002992        DRR003576
-    DRP000927       DRX002901            DRS003001        DRR003577
-    DRP000927       DRX002902            DRS003010        DRR003578
-    DRP000927       DRX002903            DRS003019        DRR003579
-    DRP000927       DRX002904            DRS003028        DRR003580
-    DRP000927       DRX002905            DRS003037        DRR003581
-    DRP000927       DRX002906            DRS003038        DRR003582
-    DRP003075       DRX019536            DRS026974        DRR021383
+Refer to the notebook for `(shallow) time benchmarks <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/08.pysradb_ascp_multithreaded.ipynb>`_.
+    
 
 
 
-**************
-Demo Notebooks
-**************
+***********
+Publication
+***********
 
-These notebooks document all the possible features of `pysradb`:
-
-1. `Python API <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/01.Python-API_demo.ipynb>`_
-2. `Downloading datasets from SRA - command line <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/02.Commandline_download.ipynb>`_
-3. `Parallely download multiple datasets - Python API <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/03.ParallelDownload.ipynb>`_
-4. `Converting SRA-to-fastq - command line (requires conda) <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/04.SRA_to_fastq_conda.ipynb>`_
-5. `Downloading subsets of a project - Python API <https://colab.research.google.com/github/saketkc/pysradb/blob/master/notebooks/05.Downloading_subsets_of_a_project.ipynb>`_
+ `pysradb: A Python package to query next-generation sequencing metadata and data from NCBI Sequence Read Archive <https://f1000research.com/articles/8-532/v1>`_
 
 
-
+ Presentation slides from BOSC (ISMB-ECCB) 2019: https://f1000research.com/slides/8-1183
+ 
+ 
 ********
 Citation
 ********
@@ -364,6 +322,12 @@ Zenodo archive: https://zenodo.org/badge/latestdoi/159590788
 
 Zenodo DOI: 10.5281/zenodo.2306881
 
+
+**********
+Questions?
+**********
+
+Join our `Slack Channel <https://join.slack.com/t/pysradb/shared_invite/zt-f01jndpy-KflPu3Be5Aq3FzRh5wj1Ug>`_ or open an `issue <https://github.com/saketkc/pysradb/issues>`_.
 
 * Free software: BSD license
 * Documentation: https://saketkc.github.io/pysradb

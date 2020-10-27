@@ -10,7 +10,7 @@ from pysradb.sraweb import SRAweb
 @pytest.fixture(scope="module")
 def sraweb_connection():
     db = SRAweb()
-    time.sleep(1)
+    time.sleep(2)
     return db
 
 
@@ -18,6 +18,13 @@ def test_sra_metadata(sraweb_connection):
     """Test if metadata has right number of entries"""
     df = sraweb_connection.sra_metadata("SRP016501")
     assert df.shape[0] == 134
+
+
+def test_sra_metadata_missing_orgname(sraweb_connection):
+    """Test if metadata has right number of entries"""
+    df = sraweb_connection.sra_metadata("ERP000171")
+    # See: https://github.com/saketkc/pysradb/issues/46#issuecomment-657268760
+    assert "N/A" in df.organism_name.tolist()
 
 
 def test_sra_metadata_multiple(sraweb_connection):
@@ -35,6 +42,15 @@ def test_sra_metadata_multiple_detailed(sraweb_connection):
     df = sraweb_connection.sra_metadata(["SRP002605", "SRP098789"], detailed=True)
     columns = ["treatment time", "library type", "transfection", "time"]
     assert len(set(columns).intersection(set(df.columns))) == 4
+    ftp_cols = [
+        "ena_fastq_http",
+        "ena_fastq_http_1",
+        "ena_fastq_http_2",
+        "ena_fastq_ftp",
+        "ena_fastq_ftp_1",
+        "ena_fastq_ftp_2",
+    ]
+    assert len(set(ftp_cols).intersection(set(df.columns))) == 6
 
 
 def test_tissue_column(sraweb_connection):
@@ -203,3 +219,8 @@ def test_srx_to_srs(sraweb_connection):
     """Test if srx is converted to srs correctly"""
     df = sraweb_connection.srx_to_srs("SRX663253")
     assert list(df["sample_accession"]) == ["SRS668126"]
+
+
+def test_xmlns_id(sraweb_connection):
+    df = sraweb_connection.sra_metadata(["GSM1013144", "GSM2520660"])
+    assert list(df["library_layout"]) == ["PAIRED", "SINGLE"]

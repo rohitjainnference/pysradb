@@ -1,6 +1,8 @@
 """Methods to interact with SRA"""
 
+from functools import partial
 import gzip
+from multiprocessing import Pool
 import os
 import re
 import subprocess
@@ -11,6 +13,7 @@ from subprocess import PIPE
 import numpy as np
 import pandas as pd
 from tqdm.autonotebook import tqdm
+from tqdm.contrib.concurrent import process_map
 
 from .basedb import BASEdb
 from .download import download_file
@@ -44,8 +47,49 @@ SRADB_URL = [
     "https://gbnci-abcc.ncifcrf.gov/backup/SRAmetadb.sqlite.gz",
 ]
 
-ASCP_CMD_PREFIX = "ascp -k 1 -QT -l 2000m -i"
+ASCP_CMD_PREFIX = "ascp -k1 -T -l 300m -P33001 -i"
 PY3_VERSION = sys.version_info.minor
+
+
+def _handle_download(record, use_ascp=False, pbar=None, ascp_bin=None, ascp_dir=None):
+    srp = record["study_accession"]
+    srx = record["experiment_accession"]
+    srr = record["run_accession"]
+    download_url = record["download_url"]
+    srapath_url = record["srapath_url"]
+    out_dir = record["out_dir"]
+    if pbar:
+        pbar.set_description("{}/{}/{}".format(srp, srx, srr))
+    srp_dir = os.path.join(out_dir, srp)
+    srx_dir = os.path.join(srp_dir, srx)
+    download_filename = path_leaf(download_url)
+    if ".fastq.gz" not in download_filename:
+        srr_location = os.path.join(srx_dir, srr + ".sra")
+    else:
+        srr_location = os.path.join(srx_dir, download_filename)
+    mkdir_p(srx_dir)
+    if use_ascp:
+
+        ascp = ASCP_CMD_PREFIX.replace("ascp", ascp_bin)
+        ena_cols = [x for x in list(record.keys()) if "ena_fastq_ftp" in x]
+        for col in ena_cols:
+            download_url = record[col]
+            cmd = "{} {} {} {}".format(
+                ascp, _find_aspera_keypath(ascp_dir), download_url, srx_dir
+            )
+            run_command(cmd, verbose=False)
+    else:
+        if srapath_url is not None:
+            download_filename = path_leaf(srapath_url)
+            if ".fastq.gz" not in download_filename:
+                srr_location = os.path.join(srx_dir, srr + ".sra")
+            else:
+                srr_location = os.path.join(srx_dir, download_filename)
+            download_file(srapath_url, srr_location)
+        else:
+            download_file(download_url, srr_location)
+    if pbar:
+        pbar.update()
 
 
 def _create_query(select_type_sql, gses):
@@ -1228,9 +1272,11 @@ class SRAdb(BASEdb):
         url_col="sra_url",
         out_dir=None,
         filter_by_srx=[],
-        protocol="ftp",
+        use_ascp=False,
         ascp_dir=None,
+        ascp_bin=None,
         skip_confirmation=False,
+        threads=1,
     ):
         """Download SRA files.
 
@@ -1255,16 +1301,10 @@ class SRAdb(BASEdb):
             out_dir = os.path.join(os.getcwd(), "pysradb_downloads")
         if srp:
             df = self.sra_metadata(srp, detailed=True)
-        # if protocol == "ftp":
-        #    sys.stderr.write(
-        #        dedent("""\
-        #    Using `ftp` protocol leads to slower downloads.\n
-        #    Consider using `fasp` after installing aspera-client.\n"""))
-        if protocol == "fasp":
+        if use_ascp:
             if ascp_dir is None:
                 ascp_dir = os.path.join(os.path.expanduser("~"), ".aspera")
             if not os.path.exists(ascp_dir):
-
                 sys.stderr.write(
                     "Count not find aspera at: {}\n".format(ascp_dir)
                     + "Install aspera-client following instructions"
@@ -1272,7 +1312,6 @@ class SRAdb(BASEdb):
                     + "You can supress this message by using `--use-wget` flag\n"
                     + "Continuing with wget ...\n\n"
                 )
-                protocol = "ftp"
             else:
                 ascp_bin = os.path.join(ascp_dir, "connect", "bin", "ascp")
         df = df.copy()
@@ -1285,7 +1324,7 @@ class SRAdb(BASEdb):
             df["download_url"] = ""
         else:
             df.loc[:, "download_url"] = (
-                FTP_PREFIX[protocol]
+                FTP_PREFIX["ftp"]
                 + "/sra/sra-instant/reads/ByRun/sra/"
                 + df["run_accession"].str[:3]
                 + "/"
@@ -1296,13 +1335,14 @@ class SRAdb(BASEdb):
                 + df["run_accession"]
                 + ".sra"
             )
-
+        ena_columns = [col for col in df.columns if "ena" in col]
         if url_col in df.columns.tolist():
             df = df.rename(columns={url_col: "srapath_url"})
         else:
             df["srapath_url"] = [
                 self._srapath_url_srr(srr) for srr in df["run_accession"]
             ]
+        df["out_dir"] = out_dir
         download_list = df[
             [
                 "study_accession",
@@ -1311,48 +1351,33 @@ class SRAdb(BASEdb):
                 "download_url",
                 "srapath_url",
             ]
+            + ena_columns
         ].values
         if not len(df.index):
             print("Could not locate {} in db".format(srp))
             sys.exit(0)
-        file_sizes = df.apply(get_file_size, axis=1)
-        total_file_size = millify(np.sum(file_sizes))
-        print("The following files will be downloaded: \n")
-        pd.set_option("display.max_colwidth", -1)
-        print(df.to_string(index=False, justify="left", col_space=0))
-        print(os.linesep)
-        print("Total size: {}".format(total_file_size))
-        print(os.linesep)
-        if not skip_confirmation:
-            if not confirm("Start download? "):
-                sys.exit(0)
-        with tqdm(total=download_list.shape[0]) as pbar:
-            for srp, srx, srr, download_url, srapath_url in download_list:
-                pbar.set_description("{}/{}/{}".format(srp, srx, srr))
-                srp_dir = os.path.join(out_dir, srp)
-                srx_dir = os.path.join(srp_dir, srx)
-                download_filename = path_leaf(download_url)
-                if ".fastq.gz" not in download_filename:
-                    srr_location = os.path.join(srx_dir, srr + ".sra")
-                else:
-                    srr_location = os.path.join(srx_dir, download_filename)
-                mkdir_p(srx_dir)
-                if protocol == "fasp":
+        if not use_ascp:
+            file_sizes = df.apply(get_file_size, axis=1)
+            total_file_size = millify(np.sum(file_sizes))
+            print("The following files will be downloaded: \n")
+            pd.set_option("display.max_colwidth", -1)
+            print(df.to_string(index=False, justify="left", col_space=0))
+            print(os.linesep)
+            print("Total size: {}".format(total_file_size))
+            print(os.linesep)
+            if not skip_confirmation:
+                if not confirm("Start download? "):
+                    sys.exit(0)
 
-                    cmd = ASCP_CMD_PREFIX.replace("ascp", ascp_bin)
-                    cmd = "{} {} {} {}".format(
-                        cmd, _find_aspera_keypath(ascp_dir), download_url, srx_dir
-                    )
-                    run_command(cmd, verbose=False)
-                else:
-                    if srapath_url is not None:
-                        download_filename = path_leaf(srapath_url)
-                        if ".fastq.gz" not in download_filename:
-                            srr_location = os.path.join(srx_dir, srr + ".sra")
-                        else:
-                            srr_location = os.path.join(srx_dir, download_filename)
-                        download_file(srapath_url, srr_location)
-                    else:
-                        download_file(download_url, srr_location)
-                pbar.update()
+        process_map(
+            partial(
+                _handle_download,
+                use_ascp=use_ascp,
+                ascp_bin=ascp_bin,
+                ascp_dir=ascp_dir,
+            ),
+            df.to_dict("records"),
+            max_workers=threads,
+        )
+
         return df
