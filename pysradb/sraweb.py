@@ -272,7 +272,7 @@ class SRAweb(SRAdb):
                         request.text, os.linesep
                     )
                 )
-                sys.exit(1)
+                raise Exception("Unable to parse esummary response json")
 
             # retry again
 
@@ -374,14 +374,14 @@ class SRAweb(SRAdb):
                 sys.stderr.write(
                     "Unable to parse xml: {}{}".format(request_text, os.linesep)
                 )
-                sys.exit(1)
+                raise  Exception("Unable to parse xml")
             if not response:
                 sys.stderr.write(
                     "Unable to parse xml response. Received: {}{}".format(
                         xml_response, os.linesep
                     )
                 )
-                sys.exit(1)
+                raise Exception("Unable to parse xml response")
             if retstart == 0:
                 results = response
             else:
@@ -405,8 +405,7 @@ class SRAweb(SRAdb):
         try:
             uids = esummary_result["uids"]
         except KeyError:
-            print("No results found for {}".format(srp))
-            sys.exit(1)
+            raise Exception("No results found for {}".format(srp))
 
         exps_xml = OrderedDict()
         runs_xml = OrderedDict()
@@ -634,8 +633,7 @@ class SRAweb(SRAdb):
         try:
             uids = result["uids"]
         except KeyError:
-            print("No results found for {} | Obtained result: {}".format(gse, result))
-            sys.exit(1)
+            raise Exception("No results found for {} | Obtained result: {}".format(gse, result))
         gse_records = []
         for uid in uids:
             record = result[uid]
@@ -653,8 +651,8 @@ class SRAweb(SRAdb):
                 del record["extrelations"]
                 gse_records.append(record)
         if not len(gse_records):
-            print("No results found for {}".format(gse))
-            sys.exit(1)
+            raise Exception("No results found for {}".format(gse))
+
         return pd.DataFrame(gse_records)
 
     def gse_to_gsm(self, gse, **kwargs):
